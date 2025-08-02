@@ -29,10 +29,11 @@ export default function Login() {
     try {
       if (isLogin) {
         // Login
-        await authAPI.login({
+        const result = await authAPI.login({
           email: formData.email,
           password: formData.password
         });
+        console.log('Login result:', result);
       } else {
         // Register
         await authAPI.register({
@@ -41,13 +42,15 @@ export default function Login() {
           password: formData.password
         });
         // After successful registration, log them in
-        await authAPI.login({
+        const result = await authAPI.login({
           email: formData.email,
           password: formData.password
         });
+        console.log('Post-registration login result:', result);
       }
       
       // Success! Navigate to home
+      console.log('Navigating to /home...');
       navigate('/home');
     } catch (err) {
       console.error('Auth error:', err);

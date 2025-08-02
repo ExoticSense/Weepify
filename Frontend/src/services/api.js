@@ -52,9 +52,9 @@ export const authAPI = {
   // Login user
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
-    if (response.data.token) {
-      localStorage.setItem('weepify_token', response.data.token);
-      localStorage.setItem('weepify_user', JSON.stringify(response.data.user));
+    if (response.data.success && response.data.data.token) {
+      localStorage.setItem('weepify_token', response.data.data.token);
+      localStorage.setItem('weepify_user', JSON.stringify(response.data.data.user));
     }
     return response.data;
   },
