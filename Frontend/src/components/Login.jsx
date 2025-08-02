@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { authAPI } from "../services/api";
+import { authAPI, apiUtils } from "../services/api";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,6 +12,13 @@ export default function Login() {
     password: ""
   });
   const navigate = useNavigate();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (apiUtils.isAuthenticated()) {
+      navigate('/home');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -49,9 +56,11 @@ export default function Login() {
         console.log('Post-registration login result:', result);
       }
       
-      // Success! Navigate to home
-      console.log('Navigating to /home...');
-      navigate('/home');
+      // Success! Navigate to home after a short delay to ensure auth state is set
+      console.log('Authentication successful, navigating to /home...');
+      setTimeout(() => {
+        navigate('/home');
+      }, 100);
     } catch (err) {
       console.error('Auth error:', err);
       setError(err.response?.data?.message || "Something went wrong. Please try again.");
