@@ -8,7 +8,7 @@
 import axios from 'axios';
 
 // 🌐 Base URL for your backend API
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://weepify.onrender.com/api';
 
 // Create axios instance with default config
 const api = axios.create({
