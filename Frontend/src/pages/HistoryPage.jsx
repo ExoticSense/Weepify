@@ -1,13 +1,40 @@
 import { useEffect, useState, useRef } from "react";
 import { cryLogsAPI } from "../services/api";
 import { FaTint, FaSeedling, FaChartBar, FaFire } from "react-icons/fa";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function HistoryPage() {
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({
     totalTears: 0,
     plantsWatered: 0,
-    cryingStreak: 0
+    cryingStreak: 0,
+    dailyStats: [],
+    weeklyStats: [],
+    monthlyStats: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,11 +51,17 @@ export default function HistoryPage() {
           cryLogsAPI.getStats()
         ]);
         
-        setLogs(logsData.cryLogs || []);
-        setStats(statsData || {
-          totalTears: 0,
-          plantsWatered: 0,
-          cryingStreak: 0
+        setLogs(logsData.data || []);
+        
+        // Handle backend stats structure (nested in data object)
+        const backendStats = statsData.data || {};
+        setStats({
+          totalTears: (backendStats.lifetime_tears_ml || 0) / 1000, // Convert ML to L
+          plantsWatered: backendStats.plants_watered || 0,
+          cryingStreak: backendStats.highest_streak || 0,
+          dailyStats: backendStats.daily_stats || [],
+          weeklyStats: backendStats.weekly_stats || [],
+          monthlyStats: backendStats.monthly_stats || []
         });
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -40,6 +73,115 @@ export default function HistoryPage() {
 
     fetchData();
   }, []);
+
+  // Chart data generators
+  const generateDailyChartData = () => {
+    const data = stats.dailyStats || [];
+    return {
+      labels: data.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }),
+      datasets: [
+        {
+          label: 'Tears (ml)',
+          data: data.map(item => item.tears_ml || 0),
+          backgroundColor: 'rgba(59, 130, 246, 0.6)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 2,
+        },
+        {
+          label: 'Sessions',
+          data: data.map(item => item.sessions || 0),
+          backgroundColor: 'rgba(236, 72, 153, 0.6)',
+          borderColor: 'rgba(236, 72, 153, 1)',
+          borderWidth: 2,
+        }
+      ]
+    };
+  };
+
+  const generateWeeklyChartData = () => {
+    const data = stats.weeklyStats || [];
+    return {
+      labels: data.map((item, index) => `Week ${index + 1}`),
+      datasets: [
+        {
+          label: 'Tears (ml)',
+          data: data.map(item => item.tears_ml || 0),
+          backgroundColor: 'rgba(34, 197, 94, 0.6)',
+          borderColor: 'rgba(34, 197, 94, 1)',
+          borderWidth: 2,
+        },
+        {
+          label: 'Sessions',
+          data: data.map(item => item.sessions || 0),
+          backgroundColor: 'rgba(251, 146, 60, 0.6)',
+          borderColor: 'rgba(251, 146, 60, 1)',
+          borderWidth: 2,
+        }
+      ]
+    };
+  };
+
+  const generateMonthlyChartData = () => {
+    const data = stats.monthlyStats || [];
+    return {
+      labels: data.map(item => {
+        const [year, month] = item.month.split('-');
+        return new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }),
+      datasets: [
+        {
+          label: 'Tears (ml)',
+          data: data.map(item => item.tears_ml || 0),
+          backgroundColor: 'rgba(168, 85, 247, 0.6)',
+          borderColor: 'rgba(168, 85, 247, 1)',
+          borderWidth: 2,
+        },
+        {
+          label: 'Sessions',
+          data: data.map(item => item.sessions || 0),
+          backgroundColor: 'rgba(239, 68, 68, 0.6)',
+          borderColor: 'rgba(239, 68, 68, 1)',
+          borderWidth: 2,
+        }
+      ]
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: 'white'
+        }
+      },
+      title: {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: 'white'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      },
+      y: {
+        ticks: {
+          color: 'white'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      }
+    }
+  };
 
   // Filter logs by selected date
   const filteredLogs = selectedDate
@@ -85,39 +227,73 @@ export default function HistoryPage() {
           <h3 className="text-xl font-semibold mb-2 flex items-center"> 
             <FaTint className="text-blue-400 mr-2" /> Total Tears Shed 
           </h3>
-          <p className="text-2xl">{stats.totalTears.toFixed(2)} L</p>
+          <p className="text-2xl">{(stats.totalTears || 0).toFixed(2)} L</p>
         </div>
 
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <FaSeedling className="text-green-400 mr-2" /> Plants Watered
           </h3>
-          <p className="text-2xl">{stats.plantsWatered}</p>
+          <p className="text-2xl">{stats.plantsWatered || 0}</p>
         </div>
 
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <FaFire className="text-orange-400 mr-2" /> Crying Streak
           </h3>
-          <p className="text-2xl">{stats.cryingStreak} day{stats.cryingStreak !== 1 && "s"}</p>
+          <p className="text-2xl">{stats.cryingStreak || 0} day{(stats.cryingStreak || 0) !== 1 && "s"}</p>
         </div>
       </div>
 
-      {/* Graph Placeholders */}
+      {/* Interactive Charts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {["Daily", "Weekly", "Monthly"].map((period, index) => (
-          <div
-            key={index}
-            className="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col items-center justify-center"
-          >
-            <h4 className="text-lg font-semibold text-pink-400 mb-4 flex items-center">
-              <FaChartBar className="mr-2" /> {period} Cry Graph
-            </h4>
-            <div className="w-full h-48 bg-gray-700 rounded animate-pulse flex items-center justify-center text-gray-400">
-              [{period} Graph Placeholder]
-            </div>
+        {/* Daily Chart */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h4 className="text-lg font-semibold text-blue-400 mb-4 flex items-center">
+            <FaChartBar className="mr-2" /> Last 7 Days
+          </h4>
+          <div className="w-full h-48">
+            {stats.dailyStats && stats.dailyStats.length > 0 ? (
+              <Bar data={generateDailyChartData()} options={chartOptions} />
+            ) : (
+              <div className="w-full h-full bg-gray-700 rounded animate-pulse flex items-center justify-center text-gray-400">
+                No daily data yet
+              </div>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Weekly Chart */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h4 className="text-lg font-semibold text-green-400 mb-4 flex items-center">
+            <FaChartBar className="mr-2" /> Last 4 Weeks
+          </h4>
+          <div className="w-full h-48">
+            {stats.weeklyStats && stats.weeklyStats.length > 0 ? (
+              <Bar data={generateWeeklyChartData()} options={chartOptions} />
+            ) : (
+              <div className="w-full h-full bg-gray-700 rounded animate-pulse flex items-center justify-center text-gray-400">
+                No weekly data yet
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Chart */}
+        <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h4 className="text-lg font-semibold text-purple-400 mb-4 flex items-center">
+            <FaChartBar className="mr-2" /> Last 6 Months
+          </h4>
+          <div className="w-full h-48">
+            {stats.monthlyStats && stats.monthlyStats.length > 0 ? (
+              <Line data={generateMonthlyChartData()} options={chartOptions} />
+            ) : (
+              <div className="w-full h-full bg-gray-700 rounded animate-pulse flex items-center justify-center text-gray-400">
+                No monthly data yet
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       
       {/* Date Filter Input */}

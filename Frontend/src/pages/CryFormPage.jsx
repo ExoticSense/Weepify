@@ -134,8 +134,8 @@ export default function CryFormPage() {
             >
               <option value="">Mood After Crying</option>
               <option value="Better">😊 Better</option>
-              <option value="Same">� Same</option>
-              <option value="Worse">� Worse</option>
+              <option value="Same">😑 Same</option>
+              <option value="Worse">😭 Worse</option>
             </select>
 
             <textarea
