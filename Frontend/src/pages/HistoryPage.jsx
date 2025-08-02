@@ -1,46 +1,74 @@
 import { useEffect, useState, useRef } from "react";
-
+import { cryLogsAPI } from "../services/api";
 import { FaTint, FaSeedling, FaChartBar, FaFire } from "react-icons/fa";
 
 export default function HistoryPage() {
   const [logs, setLogs] = useState([]);
-  const [streak, setStreak] = useState(0);
+  const [stats, setStats] = useState({
+    totalTears: 0,
+    plantsWatered: 0,
+    cryingStreak: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
 
-    useEffect(() => {
-    const savedLogs = JSON.parse(localStorage.getItem("cryLogs") || "[]");
-
-    const sortedLogs = savedLogs.sort((a, b) =>
-      new Date(b.date) - new Date(a.date)
-    );
-    setLogs(sortedLogs);
-
-    // Cry streak calculation
-    const dates = new Set(savedLogs.map((log) => log.date));
-    let currentStreak = 0;
-    let date = new Date();
-
-    while (true) {
-      const dateStr = date.toISOString().split("T")[0];
-      if (dates.has(dateStr)) {
-        currentStreak++;
-        date.setDate(date.getDate() - 1);
-      } else {
-        break;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch cry logs and stats from backend
+        const [logsData, statsData] = await Promise.all([
+          cryLogsAPI.getAll(),
+          cryLogsAPI.getStats()
+        ]);
+        
+        setLogs(logsData.cryLogs || []);
+        setStats(statsData || {
+          totalTears: 0,
+          plantsWatered: 0,
+          cryingStreak: 0
+        });
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError("Failed to load crying history. Please try again.");
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    setStreak(currentStreak);
+    fetchData();
   }, []);
-
-  const totalCries = logs.length;
-  const totalWater = (totalCries * 0.1).toFixed(2);
-  const totalPlants = Math.floor(totalCries * 0.5);
 
   // Filter logs by selected date
   const filteredLogs = selectedDate
     ? logs.filter((log) => log.date === selectedDate)
     : [];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex items-center justify-center">
+        <div className="text-2xl text-blue-400">Loading your crying history... 💧</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl text-red-400 mb-4">{error}</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6 font-sans">
@@ -55,23 +83,23 @@ export default function HistoryPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-xl font-semibold mb-2 flex items-center"> 
-            <FaTint className="text-blue-400 mr-2" /> Total Cry Estimate 
+            <FaTint className="text-blue-400 mr-2" /> Total Tears Shed 
           </h3>
-          <p className="text-2xl">{totalWater} L</p>
+          <p className="text-2xl">{stats.totalTears.toFixed(2)} L</p>
         </div>
 
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-xl font-semibold mb-2 flex items-center">
-            <FaSeedling className="text-green-400 mr-2" /> Thirsty greens
+            <FaSeedling className="text-green-400 mr-2" /> Plants Watered
           </h3>
-          <p className="text-2xl">{totalPlants}</p>
+          <p className="text-2xl">{stats.plantsWatered}</p>
         </div>
 
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
           <h3 className="text-xl font-semibold mb-2 flex items-center">
-            <FaFire className="text-orange-400 mr-2" /> Cry Streak
+            <FaFire className="text-orange-400 mr-2" /> Crying Streak
           </h3>
-          <p className="text-2xl">{streak} day{streak !== 1 && "s"}</p>
+          <p className="text-2xl">{stats.cryingStreak} day{stats.cryingStreak !== 1 && "s"}</p>
         </div>
       </div>
 
@@ -123,10 +151,9 @@ export default function HistoryPage() {
               className="bg-gray-800 p-5 rounded-xl shadow-md border-l-4 border-blue-500 hover:border-pink-500 transition duration-300"
             >
               <p><strong>Date:</strong> {log.date || "—"}</p>
-              <p><strong>Time:</strong> {log.time}</p>
-              <p><strong>Duration:</strong> {log.duration || "—"}</p>
+              <p><strong>Start Time:</strong> {log.startTime || log.time}</p>
+              <p><strong>Duration:</strong> {log.duration} minutes</p>
               <p><strong>Intensity:</strong> {log.intensity}</p>
-              <p><strong>Mood Before:</strong> {log.moodBefore}</p>
               <p><strong>Mood After:</strong> {log.moodAfter}</p>
               <p><strong>Reason:</strong> {log.reason || "Not specified"}</p>
             </div>

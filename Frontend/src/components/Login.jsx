@@ -1,16 +1,60 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authAPI } from "../services/api";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: ""
+  });
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+    setError(""); // Clear error when user types
+  };
 
-    // Do any auth logic here
-    // After successful login/signup, navigate to home
-    navigate('/home');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      if (isLogin) {
+        // Login
+        await authAPI.login({
+          email: formData.email,
+          password: formData.password
+        });
+      } else {
+        // Register
+        await authAPI.register({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password
+        });
+        // After successful registration, log them in
+        await authAPI.login({
+          email: formData.email,
+          password: formData.password
+        });
+      }
+      
+      // Success! Navigate to home
+      navigate('/home');
+    } catch (err) {
+      console.error('Auth error:', err);
+      setError(err.response?.data?.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,30 +74,50 @@ export default function Login() {
           {isLogin ? "Log In to Your Account" : "Create a New Account"}
         </h2>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md text-red-200 text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Form Fields */}
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <input
               type="text"
+              name="fullName"
               placeholder="Full Name"
+              value={formData.fullName}
+              onChange={handleChange}
+              required={!isLogin}
               className="w-full mb-4 px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           )}
           <input
             type="email"
+            name="email"
             placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
             className="w-full mb-4 px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="password"
+            name="password"
             placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            required
             className="w-full mb-6 px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 transition-all py-2 rounded-md font-semibold"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all py-2 rounded-md font-semibold"
           >
-            {isLogin ? "Log In" : "Sign Up"}
+            {loading ? "Please wait..." : (isLogin ? "Log In" : "Sign Up")}
           </button>
         </form>
 

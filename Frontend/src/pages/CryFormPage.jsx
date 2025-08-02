@@ -1,28 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { cryLogsAPI } from "../services/api";
 
 export default function CryFormPage() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-  date: "",
-  time: "",
-  duration: "",
-  intensity: "moderate",
-  moodBefore: "",
-  moodAfter: "",
-  reason: ""
-});
+    date: "",
+    startTime: "", // Changed from 'time' to match backend
+    duration: "",
+    intensity: "moderate",
+    moodAfter: "", // This matches backend
+    reason: ""
+  });
 
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setError(""); // Clear error when user types
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const logs = JSON.parse(localStorage.getItem("cryLogs") || "[]");
-    localStorage.setItem("cryLogs", JSON.stringify([...logs, formData]));
-    navigate("/history");
+    setLoading(true);
+    setError("");
+
+    try {
+      // Send data to backend API
+      await cryLogsAPI.create({
+        date: formData.date,
+        startTime: formData.startTime,
+        duration: parseInt(formData.duration), // Convert to number
+        intensity: formData.intensity,
+        moodAfter: formData.moodAfter,
+        reason: formData.reason
+      });
+      
+      // Success! Navigate to history
+      navigate("/history");
+    } catch (err) {
+      console.error('Error saving cry log:', err);
+      setError(err.response?.data?.message || "Failed to save crying session. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,36 +76,47 @@ export default function CryFormPage() {
             Even tears have stories.💧
           </p>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-md text-red-200 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex gap-4">
               <input
                 name="date"
                 type="date"
+                value={formData.date}
                 className="w-1/2 p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onChange={handleChange}
                 required
               />
               <input
-                name="time"
+                name="startTime"
                 type="time"
+                value={formData.startTime}
                 className="w-1/2 p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onChange={handleChange}
                 required
               />
-              <input
-                type="number"
-                name="duration"
-                placeholder="Duration (in minutes)"
-                className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-                onChange={handleChange}
-                required
-              />
-
             </div>
+            
+            <input
+              type="number"
+              name="duration"
+              placeholder="Duration (in minutes)"
+              value={formData.duration}
+              className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="1"
+              onChange={handleChange}
+              required
+            />
 
             <select
               name="intensity"
+              value={formData.intensity}
               className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               onChange={handleChange}
             >
@@ -93,41 +126,32 @@ export default function CryFormPage() {
             </select>
 
             <select
-              name="moodBefore"
-              className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={handleChange}
-              required
-            >
-              <option value="">Mood Before</option>
-              <option value="Happy">😊 Happy</option>
-              <option value="Sad">😢 Sad</option>
-              <option value="Neutral">😐 Neutral</option>
-            </select>
-
-            <select
               name="moodAfter"
+              value={formData.moodAfter}
               className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               onChange={handleChange}
               required
             >
-              <option value="">Mood After</option>
-              <option value="Happy">😊 Happy</option>
-              <option value="Sad">😢 Sad</option>
-              <option value="Neutral">😐 Neutral</option>
+              <option value="">Mood After Crying</option>
+              <option value="Better">😊 Better</option>
+              <option value="Same">� Same</option>
+              <option value="Worse">� Worse</option>
             </select>
 
             <textarea
               name="reason"
               placeholder="Reason (optional)"
+              value={formData.reason}
               className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               onChange={handleChange}
             />
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 transition-all py-2 rounded-md font-semibold"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all py-2 rounded-md font-semibold"
             >
-              Submit Cry Log
+              {loading ? "Saving..." : "Submit Cry Log"}
             </button>
           </form>
         </div>
