@@ -67,21 +67,18 @@ cd Frontend && npm run dev
 For Software:
 
 # Screenshots (Add at least 3)
-![Login Page](screenshots/login-page.png)
+<img width="1919" height="907" alt="Screenshot 2025-08-02 074954" src="https://github.com/user-attachments/assets/d984ba61-2f9a-4426-8950-431fc7cf8f3f" />
 *Beautiful login interface with animated tears falling in the background*
 
-![Cry Form](screenshots/cry-form.png)
+<img width="1904" height="889" alt="Screenshot 2025-08-02 075134" src="https://github.com/user-attachments/assets/9bb4562c-f5e7-49cb-9dcc-5a80edec4fd0" />
 *Professional crying session logging form with intensity levels and mood tracking*
 
-![History Dashboard](screenshots/history-dashboard.png)
-*Comprehensive analytics dashboard showing lifetime tears, plants watered, and crying streaks with interactive charts*
+<img width="1898" height="895" alt="Screenshot 2025-08-02 075158" src="https://github.com/user-attachments/assets/a20b79ea-d365-49ee-aff4-bfefa317be0c" />
 
-![Statistics Charts](screenshots/charts.png)
+*Comprehensive analytics dashboard showing lifetime tears, plants watered, and crying streaks with interactive charts*
 *Beautiful Chart.js visualizations showing daily, weekly, and monthly crying patterns*
 
-# Diagrams
-![Architecture](diagrams/architecture.png)
-*System architecture showing React frontend, Express backend, Supabase database, and JWT authentication flow*
+
 
 ## Features Implemented ✨
 - 🔐 **User Authentication**: Secure JWT-based login/register system
@@ -133,20 +130,10 @@ CREATE TABLE cry_logs (
 );
 ```
 
-### Project Demo
-# Video
-[Add your demo video link here]
-*Complete walkthrough showing user registration, cry logging, and analytics dashboard with live charts*
-
-# Additional Demos
-- Live deployment: [Your deployed URL]
-- Interactive charts showing real crying data
-- Responsive design demo on mobile devices
-
 ## Team Contributions
-- [Name 1]: Backend API development, database design, JWT authentication system
-- [Name 2]: Frontend React components, Chart.js integration, UI/UX design
-- [Name 3]: Full-stack integration, deployment, testing, and documentation
+- Jeevan Jose: Backend API development, database design, JWT authentication system
+- Manna Maria John: Frontend React components, Chart.js integration, UI/UX design
+- Jeevan Jose: Full-stack integration, deployment, testing, and documentation
 
 ## Why This Project Matters (It Doesn't) 🤷‍♀️
 Weepify addresses the critical gap in emotional data analytics. In a world obsessed with tracking steps, heart rate, and sleep patterns, we've finally brought scientific rigor to crying. Our advanced algorithms can tell you exactly how productive your emotional breakdowns have been!
